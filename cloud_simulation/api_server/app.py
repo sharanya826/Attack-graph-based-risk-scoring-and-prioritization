@@ -76,11 +76,9 @@ if __name__ == '__main__':
     # Vulnerability: debug=True exposes Werkzeug debugger
     # Vulnerability: host='0.0.0.0' exposes to all network interfaces
     app.run(host='0.0.0.0', port=5000, debug=True)
-```
 
----
+
 
 ## api_server/requirements.txt
-```
 flask
 requests

@@ -17,7 +17,7 @@ USERS = {
 def health():
     return jsonify({"status": "healthy", "service": "auth-service"})
 
-@app.route('/verify', methods=['POST'])
+"""@app.route('/verify', methods=['POST'])
 def verify():
     data     = request.get_json()
     username = data.get('username')
@@ -35,6 +35,25 @@ def verify():
         }), 200
 
     return jsonify({"status": "failed", "message": "Invalid credentials"}), 401
+"""
+@app.route('/verify', methods=['GET', 'POST'])
+def verify():
+    if request.method == 'GET':
+        return "Use POST to login"
+
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if USERS.get(username) == password:
+        token = f"{username}-token-abc123"
+        return jsonify({
+            "status": "success",
+            "token": token,
+            "role": "admin" if username == "admin" else "user"
+        }), 200
+
+    return jsonify({"status": "failed"}), 401
 
 @app.route('/validate-token', methods=['POST'])
 def validate_token():

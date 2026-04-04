@@ -51,24 +51,4 @@ def transactions():
 if __name__ == '__main__':
     # Vulnerability: debug=True, exposed on all interfaces
     app.run(host='0.0.0.0', port=5002, debug=True)
-```
 
----
-
-## requirements.txt — what changes per service
-
-| Service | requirements.txt contents |
-|---|---|
-| api_server | `flask` and `requests` (needs requests to call other services) |
-| auth_service | `flask` only (does not call other services) |
-| payment_service | `flask` only (does not call other services) |
-
-So `auth_service/requirements.txt` and `payment_service/requirements.txt` are just:
-```
-flask
-```
-
-Only `api_server/requirements.txt` has both:
-```
-flask
-requests
