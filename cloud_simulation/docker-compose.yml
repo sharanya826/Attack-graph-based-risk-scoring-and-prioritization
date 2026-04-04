@@ -1,33 +1,93 @@
-version: "3.9"
+
 
 services:
-  api_server:
+
+  api-server:
     build: ./api_server
-    container_name: api_server
+    container_name: api-server
     ports:
       - "5000:5000"
+    environment:
+      - SECRET_KEY=supersecretkey123
+      - AUTH_SERVICE_URL=http://auth-service:5000
+      - PAYMENT_SERVICE_URL=http://payment-service:5000
     depends_on:
-      - auth_service
-      - payment_service
+      - auth-service
+      - payment-service
+      - db
     networks:
-      - cloud_net
+      - fintech-network
+    restart: always
 
-  auth_service:
+  auth-service:
     build: ./auth_service
-    container_name: auth_service
+    container_name: auth-service
     ports:
       - "5001:5000"
+    environment:
+      - SECRET_KEY=weakauthkey456
+      - ADMIN_PASSWORD=admin123
+      - USER_PASSWORD=password
     networks:
-      - cloud_net
+      - fintech-network
+    restart: always
 
-  payment_service:
+  payment-service:
     build: ./payment_service
-    container_name: payment_service
+    container_name: payment-service
     ports:
       - "5002:5000"
+    environment:
+      - DB_HOST=mysql-db
+      - DB_USER=root
+      - DB_PASSWORD=weakpassword123
+      - DB_NAME=fintech
+    depends_on:
+      - db
     networks:
-      - cloud_net
+      - fintech-network
+    restart: always
+
+  db:
+    image: mysql:8
+    container_name: mysql-db
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=weakpassword123
+      - MYSQL_DATABASE=fintech
+      - MYSQL_USER=fintech_user
+      - MYSQL_PASSWORD=fintech123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fintech-network
+    restart: always
+
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3,ec2,iam,lambda,sqs,rds,apigateway
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - DATA_DIR=/tmp/localstack/data
+      - LAMBDA_EXECUTOR=local
+      - DISABLE_CORS_CHECKS=1
+      - DISABLE_CUSTOM_CORS_APIGATEWAY=1
+    volumes:
+      - "/tmp/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - fintech-network
+    restart: always
 
 networks:
-  cloud_net:
+  fintech-network:
     driver: bridge
+
+volumes:
+  mysql_data:

@@ -17,7 +17,7 @@ USERS = {
 def health():
     return jsonify({"status": "healthy", "service": "auth-service"})
 
-"""@app.route('/verify', methods=['POST'])
+@app.route('/verify', methods=['POST'])
 def verify():
     data     = request.get_json()
     username = data.get('username')
@@ -54,7 +54,7 @@ def verify():
         }), 200
 
     return jsonify({"status": "failed"}), 401
-
+"""
 @app.route('/validate-token', methods=['POST'])
 def validate_token():
     data  = request.get_json()
@@ -73,4 +73,4 @@ def validate_token():
 
 if __name__ == '__main__':
     # Vulnerability: debug=True, exposed on all interfaces
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
