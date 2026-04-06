@@ -52,7 +52,7 @@ services:
     image: mysql:8
     container_name: mysql-db
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=weakpassword123
       - MYSQL_DATABASE=fintech
@@ -65,25 +65,18 @@ services:
     restart: always
 
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack:2.3
     container_name: localstack
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=s3,ec2,iam,lambda,sqs,rds,apigateway
+      - SERVICES=s3,ec2,iam,lambda
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
-      - DATA_DIR=/tmp/localstack/data
-      - LAMBDA_EXECUTOR=local
-      - DISABLE_CORS_CHECKS=1
-      - DISABLE_CUSTOM_CORS_APIGATEWAY=1
-    volumes:
-      - "/tmp/localstack:/tmp/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - fintech-network
-    restart: always
+    restart: on-failure
 
 networks:
   fintech-network:

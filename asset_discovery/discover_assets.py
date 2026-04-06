@@ -1,4 +1,4 @@
-import boto3, json
+import boto3, json, os
 
 ENDPOINT = "http://localhost:4566"
 REGION   = "us-east-1"
@@ -9,174 +9,303 @@ def client(service): return boto3.client(service, **KWARGS)
 
 assets = []
 
-# ── Security metadata map ─────────────────────────────────────────────────────
-# Format: "asset-name" → { cvss, exposure, privilege, notes }
-SECURITY_META = {
-    # EC2
-    "api-server":       {"cvss": 7.5, "exposure": 1, "privilege": 0, "notes": "Public-facing API, open port 80/443"},
-    "auth-service":     {"cvss": 9.0, "exposure": 1, "privilege": 1, "notes": "Handles auth tokens, critical exposure"},
-    "payment-service":  {"cvss": 8.5, "exposure": 1, "privilege": 1, "notes": "PCI-DSS scope, payment processing"},
-    "worker-service":   {"cvss": 4.0, "exposure": 0, "privilege": 0, "notes": "Internal worker, low exposure"},
-    # S3
-    "user-docs":        {"cvss": 6.5, "exposure": 1, "privilege": 0, "notes": "User PII documents, public bucket risk"},
-    "kyc-files":        {"cvss": 8.0, "exposure": 0, "privilege": 0, "notes": "KYC sensitive files, should be private"},
-    "audit-logs":       {"cvss": 5.0, "exposure": 0, "privilege": 0, "notes": "Audit trail, internal only"},
-    "backups":          {"cvss": 6.0, "exposure": 0, "privilege": 0, "notes": "Backup data, encryption needed"},
-    # IAM
-    "admin-role":       {"cvss": 9.5, "exposure": 0, "privilege": 1, "notes": "Full admin privileges, high risk"},
-    "payment-role":     {"cvss": 8.0, "exposure": 0, "privilege": 1, "notes": "Payment access, elevated privilege"},
-    "readonly-role":    {"cvss": 2.0, "exposure": 0, "privilege": 0, "notes": "Read-only, low risk"},
-    "db-access-role":   {"cvss": 7.0, "exposure": 0, "privilege": 1, "notes": "Direct DB access, sensitive"},
-    "lambda-exec-role": {"cvss": 5.5, "exposure": 0, "privilege": 0, "notes": "Lambda execution role"},
-    # Lambda
-    "payment-lambda":   {"cvss": 7.5, "exposure": 1, "privilege": 1, "notes": "Processes payments, internet-triggered"},
-    "kyc-lambda":       {"cvss": 6.5, "exposure": 0, "privilege": 0, "notes": "KYC verification logic"},
-    "notify-lambda":    {"cvss": 3.0, "exposure": 0, "privilege": 0, "notes": "Notification sender, low risk"},
-    # SQS
-    "tx-queue":         {"cvss": 6.0, "exposure": 0, "privilege": 0, "notes": "Transaction queue, internal"},
-    "notify-queue":     {"cvss": 2.5, "exposure": 0, "privilege": 0, "notes": "Notification queue, low risk"},
-    # API Gateway
-    "fintech-api-gateway": {"cvss": 7.0, "exposure": 1, "privilege": 0, "notes": "Public API entry point"},
-    # Manual Nodes
-    "mysql-db":         {"cvss": 8.5, "exposure": 0, "privilege": 1, "notes": "Main database, weak password risk"},
-    "redis-cache":      {"cvss": 6.0, "exposure": 0, "privilege": 0, "notes": "Cache layer, no auth by default"},
-    "waf-firewall":     {"cvss": 4.5, "exposure": 1, "privilege": 0, "notes": "WAF protection layer"},
-    # Infra Nodes
-    "load-balancer":    {"cvss": 5.0, "exposure": 1, "privilege": 0, "notes": "Public load balancer"},
-    "cloudtrail-logs":  {"cvss": 3.5, "exposure": 0, "privilege": 0, "notes": "Audit logging service"},
-    "kms-keys":         {"cvss": 7.0, "exposure": 0, "privilege": 1, "notes": "Encryption keys, critical asset"},
-}
+# ── 1. EC2 Instances ─────────────────────────────────────
+def discover_ec2():
+    print("🔍 Discovering EC2 instances...")
+    ec2 = client("ec2")
+    try:
+        resp = ec2.describe_instances()
+        for r in resp["Reservations"]:
+            for i in r["Instances"]:
+                if i["State"]["Name"] == "terminated":
+                    continue
+                name = next(
+                    (t["Value"] for t in i.get("Tags", [])
+                     if t["Key"] == "Name"), i["InstanceId"]
+                )
+                asset = {
+                    "id":           f"ec2:{i['InstanceId']}",
+                    "name":         name,
+                    "type":         "EC2",
+                    "instance_id":  i["InstanceId"],
+                    "state":        i["State"]["Name"],
+                    "instance_type":i.get("InstanceType", "t2.micro"),
+                    "public_ip":    i.get("PublicIpAddress", None),
+                    "exposure":     "public" if i.get("PublicIpAddress") else "internal",
+                    "cvss":         7.5 if i.get("PublicIpAddress") else 4.0,
+                    "privilege":    "compute",
+                    "sensitivity":  "HIGH" if name in ["api-server","payment-service"] else "MEDIUM"
+                }
+                assets.append(asset)
+                print(f"  ✅ EC2: {name} ({i['InstanceId']})")
+    except Exception as e:
+        print(f"  ❌ EC2 error: {e}")
 
-def meta(name, asset_type):
-    """Attach security metadata to an asset."""
-    m = SECURITY_META.get(name, {"cvss":5.0,"exposure":0,"privilege":0,"notes":"No metadata"})
-    return {
-        "name":        name,
-        "type":        asset_type,
-        "cvss_score":  m["cvss"],
-        "exposure":    m["exposure"],
-        "privilege":   m["privilege"],
-        "notes":       m["notes"],
+# ── 2. S3 Buckets ─────────────────────────────────────────
+def discover_s3():
+    print("🔍 Discovering S3 buckets...")
+    s3 = client("s3")
+    try:
+        resp = s3.list_buckets()
+        for b in resp["Buckets"]:
+            name = b["Name"]
+            # check if public
+            try:
+                acl    = s3.get_bucket_acl(Bucket=name)
+                public = any(
+                    "AllUsers" in g["Grantee"].get("URI", "")
+                    for g in acl["Grants"]
+                )
+            except Exception:
+                public = False
+
+            sensitivity = "CRITICAL" if "kyc" in name or "audit" in name \
+                     else "HIGH"     if "docs" in name \
+                     else "MEDIUM"
+
+            asset = {
+                "id":          f"s3:{name}",
+                "name":        name,
+                "type":        "S3Bucket",
+                "public":      public,
+                "exposure":    "public" if public else "private",
+                "cvss":        9.1 if public else 5.5,
+                "privilege":   "storage",
+                "sensitivity": sensitivity
+            }
+            assets.append(asset)
+            print(f"  ✅ S3: {name}  public={public}  sensitivity={sensitivity}")
+    except Exception as e:
+        print(f"  ❌ S3 error: {e}")
+
+# ── 3. IAM Roles ──────────────────────────────────────────
+def discover_iam():
+    print("🔍 Discovering IAM roles...")
+    iam = client("iam")
+    try:
+        resp = iam.list_roles()
+        for role in resp["Roles"]:
+            rname = role["RoleName"]
+            # check attached policies
+            try:
+                policies = iam.list_attached_role_policies(
+                    RoleName=rname)["AttachedPolicies"]
+                overprivileged = any(
+                    "Admin" in p["PolicyName"] or "FullAccess" in p["PolicyName"]
+                    for p in policies
+                )
+            except Exception:
+                overprivileged = False
+
+            asset = {
+                "id":             f"iam:{rname}",
+                "name":           rname,
+                "type":           "IAMRole",
+                "overprivileged": overprivileged,
+                "exposure":       "internal",
+                "cvss":           8.8 if overprivileged else 4.5,
+                "privilege":      "admin" if "admin" in rname else "limited",
+                "sensitivity":    "CRITICAL" if overprivileged else "MEDIUM"
+            }
+            assets.append(asset)
+            print(f"  ✅ IAM: {rname}  overprivileged={overprivileged}")
+    except Exception as e:
+        print(f"  ❌ IAM error: {e}")
+
+# ── 4. Lambda Functions ───────────────────────────────────
+def discover_lambda():
+    print("🔍 Discovering Lambda functions...")
+    lam = client("lambda")
+    try:
+        resp = lam.list_functions()
+        for fn in resp["Functions"]:
+            fname     = fn["FunctionName"]
+            role_name = fn["Role"].split("/")[-1]
+            asset = {
+                "id":        f"lambda:{fname}",
+                "name":      fname,
+                "type":      "Lambda",
+                "runtime":   fn.get("Runtime", "unknown"),
+                "role":      role_name,
+                "exposure":  "internal",
+                "cvss":      6.5,
+                "privilege": "compute",
+                "sensitivity": "HIGH" if "payment" in fname else "MEDIUM"
+            }
+            assets.append(asset)
+            print(f"  ✅ Lambda: {fname}  role={role_name}")
+    except Exception as e:
+        print(f"  ❌ Lambda error: {e}")
+
+# ── 5. API Gateway ────────────────────────────────────────
+def discover_api_gateway():
+    print("🔍 Discovering API Gateway...")
+    apigw = client("apigateway")
+    try:
+        resp = apigw.get_rest_apis()
+        for api in resp["items"]:
+            asset = {
+                "id":          f"apigw:{api['id']}",
+                "name":        api["name"],
+                "type":        "APIGateway",
+                "api_id":      api["id"],
+                "exposure":    "public",
+                "cvss":        7.0,
+                "privilege":   "gateway",
+                "sensitivity": "HIGH"
+            }
+            assets.append(asset)
+            print(f"  ✅ API Gateway: {api['name']} → {api['id']}")
+    except Exception as e:
+        print(f"  ❌ API Gateway error: {e}")
+
+# ── 6. SSM Parameters (SQS + Manual + Infra nodes) ───────
+def discover_ssm_nodes():
+    print("🔍 Discovering SSM nodes (SQS + Manual + Infra)...")
+    ssm = client("ssm")
+
+    type_map = {
+        "SQS":        {"cvss": 5.0, "exposure": "internal", "sensitivity": "MEDIUM"},
+        "RDS-MySQL":  {"cvss": 8.5, "exposure": "private",  "sensitivity": "CRITICAL"},
+        "ElastiCache":{"cvss": 6.0, "exposure": "private",  "sensitivity": "HIGH"},
+        "WAF":        {"cvss": 4.0, "exposure": "public",   "sensitivity": "MEDIUM"},
+        "ALB":        {"cvss": 6.5, "exposure": "public",   "sensitivity": "HIGH"},
+        "CloudTrail": {"cvss": 3.0, "exposure": "internal", "sensitivity": "MEDIUM"},
+        "KMS":        {"cvss": 5.5, "exposure": "internal", "sensitivity": "HIGH"},
     }
 
-# ── 1. Discover EC2 Instances ─────────────────────────────────────────────────
-def discover_ec2():
-    ec2  = client("ec2")
-    resp = ec2.describe_instances()
-    for r in resp["Reservations"]:
-        for inst in r["Instances"]:
-            name   = next((t["Value"] for t in inst.get("Tags",[]) if t["Key"]=="Name"), "unknown")
-            record = meta(name, "EC2")
-            record.update({
-                "instance_id": inst["InstanceId"],
-                "state":       inst["State"]["Name"],
-                "public_ip":   inst.get("PublicIpAddress", "N/A"),
-            })
-            assets.append(record)
-            print(f"  🔍 EC2: {name} | state={record['state']} | ip={record['public_ip']}")
+    try:
+        resp = ssm.get_parameters_by_path(
+            Path="/fintech/", Recursive=True)
+        for param in resp["Parameters"]:
+            try:
+                meta  = json.loads(param["Value"])
+                pname = param["Name"].split("/")[-1]
+                ptype = meta.get("type", "Unknown")
+                info  = type_map.get(ptype, {"cvss":5.0,"exposure":"internal","sensitivity":"MEDIUM"})
 
-# ── 2. Discover S3 Buckets ────────────────────────────────────────────────────
-def discover_s3():
-    s3   = client("s3")
-    resp = s3.list_buckets()
-    for b in resp["Buckets"]:
-        name   = b["Name"]
-        record = meta(name, "S3")
-        record["created"] = str(b["CreationDate"])
-        assets.append(record)
-        print(f"  🔍 S3: {name}")
+                asset = {
+                    "id":          f"ssm:{pname}",
+                    "name":        pname,
+                    "type":        ptype,
+                    "ssm_path":    param["Name"],
+                    "exposure":    info["exposure"],
+                    "cvss":        info["cvss"],
+                    "privilege":   "storage" if ptype in ["RDS-MySQL","ElastiCache"] else "infra",
+                    "sensitivity": info["sensitivity"],
+                    **{k: v for k, v in meta.items() if k != "type"}
+                }
+                assets.append(asset)
+                print(f"  ✅ SSM Node: {pname}  type={ptype}")
+            except Exception as e:
+                print(f"  ⚠️  SSM parse error for {param['Name']}: {e}")
+    except Exception as e:
+        print(f"  ❌ SSM error: {e}")
 
-# ── 3. Discover IAM Roles ─────────────────────────────────────────────────────
-def discover_iam():
-    iam  = client("iam")
-    resp = iam.list_roles()
-    for r in resp["Roles"]:
-        name   = r["RoleName"]
-        record = meta(name, "IAM")
-        record["arn"] = r["Arn"]
-        assets.append(record)
-        print(f"  🔍 IAM: {name}")
-
-# ── 4. Discover Lambda Functions ──────────────────────────────────────────────
-def discover_lambda():
-    lam  = client("lambda")
-    resp = lam.list_functions()
-    for fn in resp["Functions"]:
-        name   = fn["FunctionName"]
-        record = meta(name, "Lambda")
-        record["arn"]     = fn["FunctionArn"]
-        record["runtime"] = fn["Runtime"]
-        assets.append(record)
-        print(f"  🔍 Lambda: {name}")
-
-# ── 5. Discover SQS Queues ────────────────────────────────────────────────────
-def discover_sqs():
-    sqs  = client("sqs")
-    resp = sqs.list_queues()
-    for url in resp.get("QueueUrls", []):
-        name   = url.split("/")[-1]
-        record = meta(name, "SQS")
-        record["queue_url"] = url
-        assets.append(record)
-        print(f"  🔍 SQS: {name}")
-
-# ── 6. Discover API Gateway ───────────────────────────────────────────────────
-def discover_api_gateway():
-    apigw = client("apigateway")
-    resp  = apigw.get_rest_apis()
-    for api in resp["items"]:
-        name   = api["name"]
-        record = meta(name, "APIGateway")
-        record["api_id"] = api["id"]
-        assets.append(record)
-        print(f"  🔍 API Gateway: {name}")
-
-# ── 7. Manual Service Nodes (define manually) ─────────────────────────────────
-def discover_manual_nodes():
-    manual = [
-        {"name":"mysql-db",    "host":"mysql-db.local",    "port":3306},
-        {"name":"redis-cache", "host":"redis-cache.local",  "port":6379},
-        {"name":"waf-firewall","host":"waf-firewall.local", "port":443},
+# ── 7. Docker services (your 3 Flask containers) ─────────
+def discover_docker_services():
+    print("🔍 Discovering Docker microservices...")
+    services = [
+        {
+            "id":          "docker:api-server",
+            "name":        "api-server",
+            "type":        "DockerService",
+            "port":        5000,
+            "url":         "http://localhost:5000",
+            "exposure":    "public",
+            "cvss":        7.5,
+            "privilege":   "api",
+            "sensitivity": "HIGH",
+            "debug_mode":  True   # vulnerability
+        },
+        {
+            "id":          "docker:auth-service",
+            "name":        "auth-service",
+            "type":        "DockerService",
+            "port":        5001,
+            "url":         "http://localhost:5001",
+            "exposure":    "internal",
+            "cvss":        8.0,
+            "privilege":   "auth",
+            "sensitivity": "CRITICAL",
+            "weak_secret": True   # vulnerability
+        },
+        {
+            "id":          "docker:payment-service",
+            "name":        "payment-service",
+            "type":        "DockerService",
+            "port":        5002,
+            "url":         "http://localhost:5002",
+            "exposure":    "internal",
+            "cvss":        9.0,
+            "privilege":   "payment",
+            "sensitivity": "CRITICAL",
+            "no_auth_check": True  # vulnerability
+        },
+        {
+            "id":          "docker:mysql-db",
+            "name":        "mysql-db",
+            "type":        "DockerService",
+            "port":        3307,
+            "url":         "mysql://localhost:3307",
+            "exposure":    "internal",
+            "cvss":        9.5,
+            "privilege":   "database",
+            "sensitivity": "CRITICAL",
+            "weak_password": True  # vulnerability
+        },
     ]
-    for node in manual:
-        record = meta(node["name"], "ManualNode")
-        record.update({"host": node["host"], "port": node["port"]})
-        assets.append(record)
-        print(f"  🔍 Manual Node: {node['name']}")
+    for s in services:
+        assets.append(s)
+        print(f"  ✅ Docker: {s['name']}  cvss={s['cvss']}")
 
-# ── 8. Infrastructure Nodes (define manually) ─────────────────────────────────
-def discover_infra_nodes():
-    infra = [
-        {"name":"load-balancer",   "type_detail":"ALB"},
-        {"name":"cloudtrail-logs", "type_detail":"CloudTrail"},
-        {"name":"kms-keys",        "type_detail":"KMS"},
-    ]
-    for node in infra:
-        record = meta(node["name"], "InfraNode")
-        record["type_detail"] = node["type_detail"]
-        assets.append(record)
-        print(f"  🔍 Infra Node: {node['name']}")
-
-# ── MAIN ──────────────────────────────────────────────────────────────────────
+# ── MAIN ─────────────────────────────────────────────────
 if __name__ == "__main__":
-    for title, fn in [
-        ("EC2 Instances",    discover_ec2),
-        ("S3 Buckets",       discover_s3),
-        ("IAM Roles",        discover_iam),
-        ("Lambda Functions", discover_lambda),
-        ("SQS Queues",       discover_sqs),
-        ("API Gateway",      discover_api_gateway),
-        ("Manual Nodes",     discover_manual_nodes),
-        ("Infra Nodes",      discover_infra_nodes),
-    ]:
-        print(f"\n🔍 Discovering {title}...")
-        fn()
+    print("=" * 55)
+    print("  FINTECH ASSET DISCOVERY")
+    print("=" * 55)
+    print()
 
-    # Save to assets.json
-    with open("assets.json", "w") as f:
-        json.dump(assets, f, indent=2, default=str)
+    discover_ec2()
+    print()
+    discover_s3()
+    print()
+    discover_iam()
+    print()
+    discover_lambda()
+    print()
+    discover_api_gateway()
+    print()
+    discover_ssm_nodes()
+    print()
+    discover_docker_services()
+    print()
 
-    print(f"\n{'='*50}")
-    print(f"  TOTAL DISCOVERED: {len(assets)} assets")
-    print(f"  💾 Saved to assets.json")
-    print("  ✅ Done!" if len(assets)==25 else f"  ⚠️ Expected 25, got {len(assets)}")
+    # ── save to assets.json ──────────────────────────────
+    output_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..", "asset_discovery", "assets.json"
+    )
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    with open(output_path, "w") as f:
+        json.dump(assets, f, indent=2)
+
+    print("=" * 55)
+    print(f"  TOTAL ASSETS DISCOVERED: {len(assets)}")
+    print(f"  SAVED TO: asset_discovery/assets.json")
+    print("=" * 55)
+
+    # ── summary by type ──────────────────────────────────
+    print()
+    print("Summary by type:")
+    from collections import Counter
+    counts = Counter(a["type"] for a in assets)
+    for t, c in sorted(counts.items()):
+        print(f"  {t:<20} {c} asset(s)")
+
+    print()
+    print("Critical assets (cvss >= 8.0):")
+    for a in sorted(assets, key=lambda x: x["cvss"], reverse=True):
+        if a["cvss"] >= 8.0:
+            print(f"  [{a['cvss']}] {a['name']} ({a['type']})")
