@@ -1,0 +1,687 @@
+[
+  {
+    "entry": "fintech-api-gateway",
+    "target": "mysql-db",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "mysql-db"
+    ],
+    "hops": 3,
+    "path_str": "fintech-api-gateway -> api-server -> auth-service -> mysql-db"
+  },
+  {
+    "entry": "fintech-api-gateway",
+    "target": "mysql-db",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 5,
+    "path_str": "fintech-api-gateway -> api-server -> auth-service -> db-access-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "fintech-api-gateway",
+    "target": "mysql-db",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "mysql-db"
+    ],
+    "hops": 3,
+    "path_str": "fintech-api-gateway -> api-server -> payment-service -> mysql-db"
+  },
+  {
+    "entry": "fintech-api-gateway",
+    "target": "mysql-db",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 5,
+    "path_str": "fintech-api-gateway -> api-server -> payment-service -> payment-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "fintech-api-gateway",
+    "target": "mysql-db",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "mysql-db"
+    ],
+    "hops": 2,
+    "path_str": "fintech-api-gateway -> api-server -> mysql-db"
+  },
+  {
+    "entry": "fintech-api-gateway",
+    "target": "kyc-files",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "kyc-files"
+    ],
+    "hops": 3,
+    "path_str": "fintech-api-gateway -> api-server -> payment-service -> kyc-files"
+  },
+  {
+    "entry": "fintech-api-gateway",
+    "target": "kms-keys",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 5,
+    "path_str": "fintech-api-gateway -> api-server -> auth-service -> db-access-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "fintech-api-gateway",
+    "target": "kms-keys",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 5,
+    "path_str": "fintech-api-gateway -> api-server -> payment-service -> payment-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "fintech-api-gateway",
+    "target": "admin-role",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role"
+    ],
+    "hops": 4,
+    "path_str": "fintech-api-gateway -> api-server -> auth-service -> db-access-role -> admin-role"
+  },
+  {
+    "entry": "fintech-api-gateway",
+    "target": "admin-role",
+    "path": [
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role"
+    ],
+    "hops": 4,
+    "path_str": "fintech-api-gateway -> api-server -> payment-service -> payment-role -> admin-role"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "mysql-db"
+    ],
+    "hops": 5,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> auth-service -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 7,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> auth-service -> db-access-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "mysql-db"
+    ],
+    "hops": 5,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> payment-service -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 7,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> payment-service -> payment-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "mysql-db"
+    ],
+    "hops": 4,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "auth-service",
+      "mysql-db"
+    ],
+    "hops": 4,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> auth-service -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 6,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> auth-service -> db-access-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "mysql-db"
+    ],
+    "hops": 4,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> payment-service -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 6,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> payment-service -> payment-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "mysql-db",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "mysql-db"
+    ],
+    "hops": 3,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> mysql-db"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "kyc-files",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "kyc-files"
+    ],
+    "hops": 5,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> payment-service -> kyc-files"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "kyc-files",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "kyc-files"
+    ],
+    "hops": 4,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> payment-service -> kyc-files"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "kms-keys",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 7,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> auth-service -> db-access-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "kms-keys",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 7,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> payment-service -> payment-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "kms-keys",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 6,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> auth-service -> db-access-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "kms-keys",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 6,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> payment-service -> payment-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "admin-role",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role"
+    ],
+    "hops": 6,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> auth-service -> db-access-role -> admin-role"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "admin-role",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role"
+    ],
+    "hops": 6,
+    "path_str": "waf-firewall -> load-balancer -> fintech-api-gateway -> api-server -> payment-service -> payment-role -> admin-role"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "admin-role",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role"
+    ],
+    "hops": 5,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> auth-service -> db-access-role -> admin-role"
+  },
+  {
+    "entry": "waf-firewall",
+    "target": "admin-role",
+    "path": [
+      "waf-firewall",
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role"
+    ],
+    "hops": 5,
+    "path_str": "waf-firewall -> load-balancer -> api-server -> payment-service -> payment-role -> admin-role"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "mysql-db"
+    ],
+    "hops": 4,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> auth-service -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 6,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> auth-service -> db-access-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "mysql-db"
+    ],
+    "hops": 4,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> payment-service -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 6,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> payment-service -> payment-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "mysql-db"
+    ],
+    "hops": 3,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "auth-service",
+      "mysql-db"
+    ],
+    "hops": 3,
+    "path_str": "load-balancer -> api-server -> auth-service -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 5,
+    "path_str": "load-balancer -> api-server -> auth-service -> db-access-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "mysql-db"
+    ],
+    "hops": 3,
+    "path_str": "load-balancer -> api-server -> payment-service -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "mysql-db"
+    ],
+    "hops": 5,
+    "path_str": "load-balancer -> api-server -> payment-service -> payment-role -> admin-role -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "mysql-db",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "mysql-db"
+    ],
+    "hops": 2,
+    "path_str": "load-balancer -> api-server -> mysql-db"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "kyc-files",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "kyc-files"
+    ],
+    "hops": 4,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> payment-service -> kyc-files"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "kyc-files",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "kyc-files"
+    ],
+    "hops": 3,
+    "path_str": "load-balancer -> api-server -> payment-service -> kyc-files"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "kms-keys",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 6,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> auth-service -> db-access-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "kms-keys",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 6,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> payment-service -> payment-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "kms-keys",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 5,
+    "path_str": "load-balancer -> api-server -> auth-service -> db-access-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "kms-keys",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role",
+      "kms-keys"
+    ],
+    "hops": 5,
+    "path_str": "load-balancer -> api-server -> payment-service -> payment-role -> admin-role -> kms-keys"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "admin-role",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role"
+    ],
+    "hops": 5,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> auth-service -> db-access-role -> admin-role"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "admin-role",
+    "path": [
+      "load-balancer",
+      "fintech-api-gateway",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role"
+    ],
+    "hops": 5,
+    "path_str": "load-balancer -> fintech-api-gateway -> api-server -> payment-service -> payment-role -> admin-role"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "admin-role",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "auth-service",
+      "db-access-role",
+      "admin-role"
+    ],
+    "hops": 4,
+    "path_str": "load-balancer -> api-server -> auth-service -> db-access-role -> admin-role"
+  },
+  {
+    "entry": "load-balancer",
+    "target": "admin-role",
+    "path": [
+      "load-balancer",
+      "api-server",
+      "payment-service",
+      "payment-role",
+      "admin-role"
+    ],
+    "hops": 4,
+    "path_str": "load-balancer -> api-server -> payment-service -> payment-role -> admin-role"
+  }
+]
