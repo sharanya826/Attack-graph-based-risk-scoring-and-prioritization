@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 import requests
 import os
 
+
 app = Flask(__name__)
 
 # Vulnerability: hardcoded secret key (weak)
@@ -38,7 +39,7 @@ def login():
     try:
         # Calls auth-service using container name as hostname
         response = requests.post(
-            'http://auth-service:5001/verify',
+            'http://auth-service:5000/verify',
             json={"username": username, "password": password},
             timeout=5
         )
@@ -52,7 +53,7 @@ def pay():
     try:
         # Calls payment-service using container name as hostname
         response = requests.post(
-            'http://payment-service:5002/pay',
+            'http://payment-service:5000/pay',
             json=data,
             timeout=5
         )

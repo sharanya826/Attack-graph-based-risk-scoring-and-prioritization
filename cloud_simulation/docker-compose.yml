@@ -78,6 +78,15 @@ services:
       - fintech-network
     restart: on-failure
 
+  redis:
+    image: redis:7-alpine
+    container_name: risk-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - fintech-network
+    restart: always
+
 networks:
   fintech-network:
     driver: bridge
