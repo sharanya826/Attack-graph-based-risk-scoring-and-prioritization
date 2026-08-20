@@ -48,6 +48,27 @@ def transactions():
         # Vulnerability: exposes DB connection info in response
     }), 200
 
+@app.route('/kyc', methods=['GET'])
+def kyc_data():
+    # Intentionally vulnerable simulation:
+    # KYC data is exposed without authentication.
+    return jsonify({
+        "status": "success",
+        "source": "kyc-files",
+        "records": [
+            {
+                "customer_id": "CUST-001",
+                "name": "John Doe",
+                "document": "aadhar_scan.jpg"
+            },
+            {
+                "customer_id": "CUST-002",
+                "name": "Jane Doe",
+                "document": "passport_scan.jpg"
+            }
+        ]
+    }), 200
+
 if __name__ == '__main__':
     # Vulnerability: debug=True, exposed on all interfaces
     app.run(host='0.0.0.0', port=5000, debug=True)

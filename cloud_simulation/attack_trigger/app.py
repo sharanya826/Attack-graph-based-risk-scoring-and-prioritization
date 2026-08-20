@@ -17,6 +17,8 @@ from feature_store.redis_store import record_event
 app = Flask(__name__)
 
 API_SERVER_URL = "http://localhost:5000"
+AUTH_SERVICE_URL = "http://localhost:5001"
+PAYMENT_SERVICE_URL = "http://localhost:5002"
 
 
 def make_event(
@@ -330,10 +332,180 @@ def brute_force_attack():
         "events": events
     }), 200
 
+@app.post("/traffic/attack/recon")
+def api_recon_attack():
+    events = []
+
+    targets = [
+        "/health",
+        "/api/data",
+        "/api/login",
+        "/api/pay",
+        "/api/user-docs"
+    ]
+
+    for endpoint in targets:
+        start_time = time.perf_counter()
+
+        try:
+            response = requests.get(
+                f"{API_SERVER_URL}{endpoint}",
+                timeout=5
+            )
+
+            latency_ms = round(
+                (time.perf_counter() - start_time) * 1000,
+                2
+            )
+
+            event = make_event(
+                traffic_type="attack_recon",
+                endpoint=endpoint,
+                method="GET",
+                status_code=response.status_code,
+                latency_ms=latency_ms,
+                success=response.ok
+            )
+
+        except requests.RequestException as error:
+            latency_ms = round(
+                (time.perf_counter() - start_time) * 1000,
+                2
+            )
+
+            event = make_event(
+                traffic_type="attack_recon",
+                endpoint=endpoint,
+                method="GET",
+                status_code=503,
+                latency_ms=latency_ms,
+                success=False,
+                error=str(error)
+            )
+
+        record_event(event)
+        events.append(event)
+
+    return jsonify({
+        "scenario": "api_recon",
+        "event_count": len(events),
+        "events": events
+    }), 200
+
+@app.post("/traffic/attack/token-forgery")
+def token_forgery_attack():
+    events = []
+
+    forged_tokens = [
+        "admin-token-abc123",
+        "finance-token-abc123"
+    ]
+
+    for token in forged_tokens:
+        start_time = time.perf_counter()
+
+        try:
+            response = requests.post(
+                f"{AUTH_SERVICE_URL}/validate-token",
+                json={"token": token},
+                timeout=5
+            )
+
+            latency_ms = round(
+                (time.perf_counter() - start_time) * 1000,
+                2
+            )
+
+            event = make_event(
+                traffic_type="attack_token_forgery",
+                endpoint="/validate-token",
+                method="POST",
+                status_code=response.status_code,
+                latency_ms=latency_ms,
+                success=response.ok,
+                destination="auth-service"
+            )
+
+        except requests.RequestException as error:
+            latency_ms = round(
+                (time.perf_counter() - start_time) * 1000,
+                2
+            )
+
+            event = make_event(
+                traffic_type="attack_token_forgery",
+                endpoint="/validate-token",
+                method="POST",
+                status_code=503,
+                latency_ms=latency_ms,
+                success=False,
+                destination="auth-service",
+                error=str(error)
+            )
+
+        record_event(event)
+        events.append(event)
+
+    return jsonify({
+        "scenario": "token_forgery",
+        "attempt_count": len(events),
+        "events": events
+    }), 200
+
+@app.post("/traffic/attack/kyc-exfiltration")
+def kyc_exfiltration_attack():
+    start_time = time.perf_counter()
+
+    try:
+        response = requests.get(
+            f"{PAYMENT_SERVICE_URL}/kyc",
+            timeout=5
+        )
+
+        latency_ms = round(
+            (time.perf_counter() - start_time) * 1000,
+            2
+        )
+
+        event = make_event(
+            traffic_type="attack_kyc_exfiltration",
+            endpoint="/kyc",
+            method="GET",
+            status_code=response.status_code,
+            latency_ms=latency_ms,
+            success=response.ok,
+            destination="payment-service"
+        )
+
+    except requests.RequestException as error:
+        latency_ms = round(
+            (time.perf_counter() - start_time) * 1000,
+            2
+        )
+
+        event = make_event(
+            traffic_type="attack_kyc_exfiltration",
+            endpoint="/kyc",
+            method="GET",
+            status_code=503,
+            latency_ms=latency_ms,
+            success=False,
+            destination="payment-service",
+            error=str(error)
+        )
+
+    record_event(event)
+
+    return jsonify({
+        "scenario": "kyc_exfiltration",
+        "event_count": 1,
+        "events": [event]
+    }), 200
+    
 
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=5003,
-        debug=True
+        debug=False
     )
