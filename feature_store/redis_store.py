@@ -81,19 +81,104 @@ def record_event(event):
         round(avg_latency, 2)
     )
 
+def record_edge_event(source, target, edge_type="base"):
+    """
+    Record an observed connection between source and target.
+    """
+
+    if edge_type == "dynamic_attack":
+        key = f"dynamic_edge:{source}:{target}"
+    else:
+        key = f"edge:{source}:{target}"
+
+    redis_client.hincrby(
+        key,
+        "count",
+        1
+    )
+
+    redis_client.hset(
+        key,
+        mapping={
+            "source": source,
+            "target": target,
+            "type": edge_type,
+            "last_seen": datetime.now(
+                timezone.utc
+            ).isoformat()
+        }
+    )
 
 def get_node_state(node):
     key = f"feature:node:{node}"
 
     return redis_client.hgetall(key)
 
+def get_all_edge_states():
+    edges = {}
+
+    for pattern in ["edge:*", "dynamic_edge:*"]:
+
+        for key in redis_client.scan_iter(match=pattern):
+
+            data = redis_client.hgetall(key)
+
+            if not data:
+                continue
+
+            source = data.get("source")
+            target = data.get("target")
+
+            if not source or not target:
+                continue
+
+            edges[f"{source}:{target}"] = {
+                "source": source,
+                "target": target,
+                "count": int(
+                    data.get("count", 0)
+                ),
+                "type": data.get(
+                    "type",
+                    "base"
+                ),
+                "last_seen": data.get(
+                    "last_seen"
+                )
+            }
+
+    return edges
 
 def get_all_node_states():
     nodes = [
-        "api-server",
-        "auth-service",
-        "payment-service"
-    ]
+    # Application layer
+    "api-server",
+    "auth-service",
+    "payment-service",
+    "worker-service",
+
+    # Data layer
+    "mysql-db",
+    "redis-cache",
+
+    # Infrastructure layer
+    "fintech-api-gateway",
+    "load-balancer",
+    "waf-firewall",
+
+    # Queues / serverless
+    "tx-queue",
+    "notify-queue",
+    "payment-lambda",
+    "kyc-lambda",
+    "notify-lambda",
+
+    # Storage
+    "user-docs",
+    "kyc-files",
+    "audit-logs",
+    "backups",
+]
 
     return {
         node: get_node_state(node)

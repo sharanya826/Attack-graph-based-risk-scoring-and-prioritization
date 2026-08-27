@@ -9,9 +9,10 @@ sys.path.append(
 from flask import Flask, jsonify
 import requests
 import time
+import random
 from datetime import datetime, timezone
 
-from feature_store.redis_store import record_event
+from feature_store.redis_store import record_event, record_edge_event
 
 
 app = Flask(__name__)
@@ -19,6 +20,48 @@ app = Flask(__name__)
 API_SERVER_URL = "http://localhost:5000"
 AUTH_SERVICE_URL = "http://localhost:5001"
 PAYMENT_SERVICE_URL = "http://localhost:5002"
+
+def get_attack_destination(attack_type):
+    attack_destinations = {
+        "normal_login": [
+            "api-server",
+            "auth-service"
+        ],
+
+        "normal_payment": [
+            "api-server",
+            "payment-service",
+            "worker-service"
+        ],
+
+        "bruteforce": [
+            "api-server",
+            "auth-service"
+        ],
+
+        "recon": [
+            "api-server",
+            "auth-service",
+            "payment-service"
+        ],
+
+        "token_forgery": [
+            "auth-service",
+            "api-server"
+        ],
+
+        "kyc_exfiltration": [
+            "payment-service",
+            "worker-service"
+        ]
+    }
+
+    return random.choice(
+        attack_destinations.get(
+            attack_type,
+            ["api-server"]
+        )
+    )
 
 
 def make_event(
@@ -73,12 +116,17 @@ def login():
             method="POST",
             status_code=response.status_code,
             latency_ms=latency_ms,
-            success=response.ok
+            success=response.ok,
+            destination=get_attack_destination("normal_login")
         )
 
         # Store real event in Redis
         record_event(event)
-
+        record_edge_event(
+            "api-server",
+            "auth-service",
+            "base"
+        )
         return event
 
     except requests.RequestException as error:
@@ -94,12 +142,17 @@ def login():
             status_code=503,
             latency_ms=latency_ms,
             success=False,
+            destination=get_attack_destination("normal_login"),
             error=str(error)
         )
 
         # Store failed request event in Redis
         record_event(event)
-
+        record_edge_event(
+                    "api-server",
+                    "auth-service",
+                    "base"
+        )
         return event
 
 
@@ -178,12 +231,17 @@ def payment():
             method="POST",
             status_code=response.status_code,
             latency_ms=latency_ms,
-            success=response.ok
+            success=response.ok,
+            destination=get_attack_destination("normal_payment")
         )
 
         # Store real event in Redis
         record_event(event)
-
+        record_edge_event(
+            "api-server",
+            "payment-service",
+            "base"
+        )
         return event
 
     except requests.RequestException as error:
@@ -199,12 +257,17 @@ def payment():
             status_code=503,
             latency_ms=latency_ms,
             success=False,
+            destination=get_attack_destination("normal_payment"),
             error=str(error)
         )
 
         # Store failed request event in Redis
         record_event(event)
-
+        record_edge_event(
+            "api-server",
+            "payment-service",
+            "base"
+        )
         return event
 
 
@@ -297,7 +360,8 @@ def brute_force_attack():
                 method="POST",
                 status_code=response.status_code,
                 latency_ms=latency_ms,
-                success=response.ok
+                success=response.ok,
+                destination=get_attack_destination("bruteforce")
             )
 
         except requests.RequestException as error:
@@ -313,6 +377,7 @@ def brute_force_attack():
                 status_code=503,
                 latency_ms=latency_ms,
                 success=False,
+                destination=get_attack_destination("bruteforce"),
                 error=str(error)
             )
 
@@ -320,7 +385,11 @@ def brute_force_attack():
 
         # Store real attack event in Redis
         record_event(event)
-
+        record_edge_event(
+            "api-server",
+            "auth-service",
+            "base"
+        )
         events.append(event)
 
         # Controlled delay between brute-force attempts
@@ -364,7 +433,9 @@ def api_recon_attack():
                 method="GET",
                 status_code=response.status_code,
                 latency_ms=latency_ms,
-                success=response.ok
+                success=response.ok,
+                destination=get_attack_destination("recon")
+
             )
 
         except requests.RequestException as error:
@@ -380,10 +451,16 @@ def api_recon_attack():
                 status_code=503,
                 latency_ms=latency_ms,
                 success=False,
+                destination=get_attack_destination("recon"),
                 error=str(error)
             )
 
         record_event(event)
+        record_edge_event(
+            "api-server",
+            "auth-service",
+            "base"
+        )
         events.append(event)
 
     return jsonify({
@@ -391,9 +468,12 @@ def api_recon_attack():
         "event_count": len(events),
         "events": events
     }), 200
-
-@app.post("/traffic/attack/token-forgery")
+@app.route(
+    "/traffic/attack/token-forgery",
+    methods=["POST"]
+)
 def token_forgery_attack():
+
     events = []
 
     forged_tokens = [
@@ -405,11 +485,17 @@ def token_forgery_attack():
         start_time = time.perf_counter()
 
         try:
+            record_edge_event(
+                "auth-service",
+                "admin-role",
+                "dynamic_attack"
+            )
             response = requests.post(
                 f"{AUTH_SERVICE_URL}/validate-token",
                 json={"token": token},
                 timeout=5
             )
+            
 
             latency_ms = round(
                 (time.perf_counter() - start_time) * 1000,
@@ -423,7 +509,7 @@ def token_forgery_attack():
                 status_code=response.status_code,
                 latency_ms=latency_ms,
                 success=response.ok,
-                destination="auth-service"
+                destination=get_attack_destination("token_forgery")
             )
 
         except requests.RequestException as error:
@@ -439,11 +525,16 @@ def token_forgery_attack():
                 status_code=503,
                 latency_ms=latency_ms,
                 success=False,
-                destination="auth-service",
+                destination=get_attack_destination("token_forgery"),
                 error=str(error)
             )
 
         record_event(event)
+        record_edge_event(
+            "auth-service",
+            "admin-role",
+            "dynamic_attack"
+        )
         events.append(event)
 
     return jsonify({
@@ -474,7 +565,7 @@ def kyc_exfiltration_attack():
             status_code=response.status_code,
             latency_ms=latency_ms,
             success=response.ok,
-            destination="payment-service"
+            destination=get_attack_destination("kyc_exfiltration")
         )
 
     except requests.RequestException as error:
@@ -490,11 +581,17 @@ def kyc_exfiltration_attack():
             status_code=503,
             latency_ms=latency_ms,
             success=False,
-            destination="payment-service",
+            destination=get_attack_destination("kyc_exfiltration"),
             error=str(error)
         )
 
     record_event(event)
+    record_edge_event(
+    "payment-service",
+    "worker-service",
+    "base"
+    )
+
 
     return jsonify({
         "scenario": "kyc_exfiltration",

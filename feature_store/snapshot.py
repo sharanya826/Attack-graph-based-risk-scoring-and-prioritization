@@ -3,7 +3,10 @@ from pathlib import Path
 import json
 import time
 
-from feature_store.redis_store import get_all_node_states
+from feature_store.redis_store import (
+    get_all_node_states,
+    get_all_edge_states,
+)
 
 
 # Directory where snapshots will be stored
@@ -13,13 +16,14 @@ HISTORY_DIR = SNAPSHOT_DIR / "history"
 
 def create_snapshot():
     """
-    Capture the current feature state of all nodes
+    Capture the current state of all nodes and edges
     from Redis at a single point in time.
     """
 
     snapshot = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "nodes": get_all_node_states()
+        "nodes": get_all_node_states(),
+        "edges": get_all_edge_states(),
     }
 
     return snapshot

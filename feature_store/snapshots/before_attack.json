@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-08-27T10:17:36.770942+00:00",
+  "nodes": {
+    "api-server": {
+      "request_count": "21",
+      "success_count": "5",
+      "total_latency_ms": "56902.29999999999999716",
+      "last_seen": "2026-08-27T08:41:03.721176+00:00",
+      "avg_latency_ms": "2709.63",
+      "failed_request_count": "16",
+      "error_count": "16",
+      "failed_login_count": "1"
+    },
+    "auth-service": {
+      "request_count": "8",
+      "success_count": "3",
+      "total_latency_ms": "20520.49000000000000021",
+      "last_seen": "2026-08-27T08:40:01.294030+00:00",
+      "avg_latency_ms": "2565.06",
+      "failed_request_count": "5",
+      "error_count": "5",
+      "failed_login_count": "3"
+    },
+    "payment-service": {
+      "request_count": "4",
+      "failed_request_count": "4",
+      "error_count": "4",
+      "total_latency_ms": "13662.77000000000000046",
+      "last_seen": "2026-08-27T08:14:07.768826+00:00",
+      "avg_latency_ms": "3415.69"
+    },
+    "worker-service": {
+      "request_count": "3",
+      "failed_request_count": "3",
+      "error_count": "3",
+      "total_latency_ms": "11282.36999999999999922",
+      "last_seen": "2026-08-27T08:37:14.315611+00:00",
+      "avg_latency_ms": "3760.79"
+    },
+    "mysql-db": {},
+    "redis-cache": {},
+    "fintech-api-gateway": {},
+    "load-balancer": {},
+    "waf-firewall": {},
+    "tx-queue": {},
+    "notify-queue": {},
+    "payment-lambda": {},
+    "kyc-lambda": {},
+    "notify-lambda": {},
+    "user-docs": {},
+    "kyc-files": {},
+    "audit-logs": {},
+    "backups": {}
+  },
+  "edges": {
+    "api-server:payment-service": {
+      "source": "api-server",
+      "target": "payment-service",
+      "count": 3,
+      "type": "base",
+      "last_seen": "2026-08-27T08:40:05.364154+00:00"
+    },
+    "auth-service:admin-role": {
+      "source": "auth-service",
+      "target": "admin-role",
+      "count": 9,
+      "type": "dynamic_attack",
+      "last_seen": "2026-08-27T08:27:57.889890+00:00"
+    },
+    "api-server:auth-service": {
+      "source": "api-server",
+      "target": "auth-service",
+      "count": 3,
+      "type": "base",
+      "last_seen": "2026-08-27T08:40:01.301762+00:00"
+    }
+  }
+}

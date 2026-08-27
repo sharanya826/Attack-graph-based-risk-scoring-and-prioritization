@@ -2,7 +2,7 @@ import json
 import pickle
 import networkx as nx
 
-with open("attack_graph.pkl", "rb") as f:
+with open(r"graph_model\attack_graph.pkl", "rb") as f:
     G = pickle.load(f)
 
 pagerank       = nx.pagerank(G)
