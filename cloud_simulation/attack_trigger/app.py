@@ -21,6 +21,22 @@ API_SERVER_URL = "http://localhost:5000"
 AUTH_SERVICE_URL = "http://localhost:5001"
 PAYMENT_SERVICE_URL = "http://localhost:5002"
 
+def record_attack_path(path):
+    """
+    Record dynamic attack activity across every edge in an attack path.
+    Example:
+        ["api-server", "auth-service", "admin-role"]
+    records:
+        api-server -> auth-service
+        auth-service -> admin-role
+    """
+    for source, target in zip(path, path[1:]):
+        record_edge_event(
+            source,
+            target,
+            "dynamic_attack"
+        )
+
 def get_attack_destination(attack_type):
     attack_destinations = {
         "normal_login": [
@@ -315,6 +331,20 @@ def normal_payment():
 @app.post("/traffic/attack/bruteforce")
 def brute_force_attack():
     events = []
+    dynamic_attack_path = [
+    ("api-server", "auth-service"),
+    ("auth-service", "mysql-db"),
+    ("auth-service", "db-access-role"),
+    ("db-access-role", "admin-role"),
+    ("admin-role", "mysql-db"),
+]
+
+    for source, target in dynamic_attack_path:
+        record_edge_event(
+        source,
+        target,
+        "dynamic_attack"
+        )
 
     attempts = [
         {
@@ -468,6 +498,7 @@ def api_recon_attack():
         "event_count": len(events),
         "events": events
     }), 200
+
 @app.route(
     "/traffic/attack/token-forgery",
     methods=["POST"]
@@ -475,6 +506,36 @@ def api_recon_attack():
 def token_forgery_attack():
 
     events = []
+    dynamic_attack_path = [
+    ("api-server", "auth-service"),
+    ("api-server", "payment-service"),
+    ("api-server", "mysql-db"),
+    ("api-server", "user-docs"),
+    ("api-server", "audit-logs"),
+    ("api-server", "readonly-role"),
+    ("api-server", "worker-service"),
+
+    ("auth-service", "mysql-db"),
+    ("auth-service", "db-access-role"),
+
+    ("payment-service", "mysql-db"),
+    ("payment-service", "redis-cache"),
+    ("payment-service", "kyc-files"),
+    ("payment-service", "backups"),
+    ("payment-service", "payment-role"),
+
+    ("worker-service", "tx-queue"),
+    ("worker-service", "notify-queue"),
+
+    ("kyc-files", "kyc-lambda"),
+
+    ("db-access-role", "admin-role"),
+    ("payment-role", "admin-role"),
+
+    ("admin-role", "kms-keys"),
+    ("admin-role", "cloudtrail-logs"),
+    ("admin-role", "mysql-db"),
+    ]
 
     forged_tokens = [
         "admin-token-abc123",
@@ -485,11 +546,7 @@ def token_forgery_attack():
         start_time = time.perf_counter()
 
         try:
-            record_edge_event(
-                "auth-service",
-                "admin-role",
-                "dynamic_attack"
-            )
+           
             response = requests.post(
                 f"{AUTH_SERVICE_URL}/validate-token",
                 json={"token": token},
@@ -530,11 +587,14 @@ def token_forgery_attack():
             )
 
         record_event(event)
-        record_edge_event(
-            "auth-service",
-            "admin-role",
-            "dynamic_attack"
-        )
+
+        for source, target in dynamic_attack_path:
+                record_edge_event(
+                    source,
+                    target,
+                    "dynamic_attack"
+                )
+
         events.append(event)
 
     return jsonify({
@@ -545,6 +605,20 @@ def token_forgery_attack():
 
 @app.post("/traffic/attack/kyc-exfiltration")
 def kyc_exfiltration_attack():
+    dynamic_attack_path = [
+    ("api-server", "payment-service"),
+    ("payment-service", "kyc-files"),
+    ("kyc-files", "kyc-lambda"),
+    ("kyc-lambda", "notify-lambda"),
+    ("payment-service", "backups"),
+    ]
+
+    for source, target in dynamic_attack_path:
+        record_edge_event(
+        source,
+        target,
+        "dynamic_attack"
+    )
     start_time = time.perf_counter()
 
     try:

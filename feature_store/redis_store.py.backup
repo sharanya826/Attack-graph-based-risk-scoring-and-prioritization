@@ -151,69 +151,37 @@ def get_all_edge_states():
 
 def get_all_node_states():
     nodes = [
-        "api-server",
-        "auth-service",
-        "payment-service",
-        "worker-service",
-        "mysql-db",
-        "redis-cache",
-        "fintech-api-gateway",
-        "load-balancer",
-        "waf-firewall",
-        "tx-queue",
-        "notify-queue",
-        "payment-lambda",
-        "kyc-lambda",
-        "notify-lambda",
-        "user-docs",
-        "kyc-files",
-        "audit-logs",
-        "backups",
-        "readonly-role",
-        "db-access-role",
-        "payment-role",
-        "admin-role",
-        "lambda-exec-role",
-        "kms-keys",
-        "cloudtrail-logs",
-    ]
+    # Application layer
+    "api-server",
+    "auth-service",
+    "payment-service",
+    "worker-service",
+
+    # Data layer
+    "mysql-db",
+    "redis-cache",
+
+    # Infrastructure layer
+    "fintech-api-gateway",
+    "load-balancer",
+    "waf-firewall",
+
+    # Queues / serverless
+    "tx-queue",
+    "notify-queue",
+    "payment-lambda",
+    "kyc-lambda",
+    "notify-lambda",
+
+    # Storage
+    "user-docs",
+    "kyc-files",
+    "audit-logs",
+    "backups",
+]
 
     return {
         node: get_node_state(node)
         for node in nodes
     }
-
-def record_attack_node(node, severity=1.0):
-    """
-    Record dynamic attack activity for a node.
-    This is separate from ordinary request statistics.
-    """
-    key = f"feature:node:{node}"
-
-    pipe = redis_client.pipeline()
-
-    pipe.hincrby(key, "attack_count", 1)
-    pipe.hincrbyfloat(key, "attack_severity", float(severity))
-    pipe.hset(
-        key,
-        "last_attack_seen",
-        datetime.now(timezone.utc).isoformat()
-    )
-
-    pipe.execute()
-
-def record_attack_path_state(path, severity=1.0):
-    """
-    Record dynamic attack activity for all nodes and edges
-    participating in an attack path.
-    """
-    for node in path:
-        record_attack_node(node, severity)
-
-    for source, target in zip(path, path[1:]):
-        record_edge_event(
-            source,
-            target,
-            "dynamic_attack"
-        )
 
