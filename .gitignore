@@ -7,3 +7,17 @@ __pycache__/
 
 feature_store/snapshots/latest.json
 feature_store/snapshots/history/*.json
+
+# local generated / large - do not push
+cloud_simulation/logs/
+graph_model/snapshots/
+ml_model/dgraph_windows/
+ml_model/paysim_windows/
+ml_model/*.csv
+ml_model/*.pt
+ml_model/metrics.json
+ml_model/risk_scores.json
+graph_model/ranked_paths.json
+frontend/node_modules/
+frontend/build/
+*.jsonl

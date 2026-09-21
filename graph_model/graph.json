@@ -1,7 +1,7 @@
 {
   "nodes": [
     {
-      "id": "docker:api-server",
+      "id": "api-server",
       "name": "api-server",
       "type": "DockerService",
       "instance_id": "i-83bd27f1b47141aff",
@@ -17,7 +17,7 @@
       "debug_mode": true
     },
     {
-      "id": "docker:auth-service",
+      "id": "auth-service",
       "name": "auth-service",
       "type": "DockerService",
       "instance_id": "i-ddeb54a86a3ce211e",
@@ -33,7 +33,7 @@
       "weak_secret": true
     },
     {
-      "id": "docker:payment-service",
+      "id": "payment-service",
       "name": "payment-service",
       "type": "DockerService",
       "instance_id": "i-aa4e3acb1483d5184",
@@ -49,7 +49,7 @@
       "no_auth_check": true
     },
     {
-      "id": "ec2:i-9e28b9e3437ce24c4",
+      "id": "worker-service",
       "name": "worker-service",
       "type": "EC2",
       "instance_id": "i-9e28b9e3437ce24c4",
@@ -62,7 +62,7 @@
       "sensitivity": "MEDIUM"
     },
     {
-      "id": "s3:user-docs",
+      "id": "user-docs",
       "name": "user-docs",
       "type": "S3Bucket",
       "public": false,
@@ -72,7 +72,7 @@
       "sensitivity": "HIGH"
     },
     {
-      "id": "s3:kyc-files",
+      "id": "kyc-files",
       "name": "kyc-files",
       "type": "S3Bucket",
       "public": false,
@@ -82,7 +82,7 @@
       "sensitivity": "CRITICAL"
     },
     {
-      "id": "s3:audit-logs",
+      "id": "audit-logs",
       "name": "audit-logs",
       "type": "S3Bucket",
       "public": false,
@@ -92,7 +92,7 @@
       "sensitivity": "CRITICAL"
     },
     {
-      "id": "s3:backups",
+      "id": "backups",
       "name": "backups",
       "type": "S3Bucket",
       "public": false,
@@ -102,7 +102,7 @@
       "sensitivity": "MEDIUM"
     },
     {
-      "id": "iam:db-access-role",
+      "id": "db-access-role",
       "name": "db-access-role",
       "type": "IAMRole",
       "overprivileged": false,
@@ -112,7 +112,7 @@
       "sensitivity": "MEDIUM"
     },
     {
-      "id": "iam:lambda-exec-role",
+      "id": "lambda-exec-role",
       "name": "lambda-exec-role",
       "type": "IAMRole",
       "overprivileged": false,
@@ -122,7 +122,7 @@
       "sensitivity": "MEDIUM"
     },
     {
-      "id": "iam:readonly-role",
+      "id": "readonly-role",
       "name": "readonly-role",
       "type": "IAMRole",
       "overprivileged": false,
@@ -132,7 +132,7 @@
       "sensitivity": "MEDIUM"
     },
     {
-      "id": "iam:payment-role",
+      "id": "payment-role",
       "name": "payment-role",
       "type": "IAMRole",
       "overprivileged": false,
@@ -142,7 +142,7 @@
       "sensitivity": "MEDIUM"
     },
     {
-      "id": "iam:admin-role",
+      "id": "admin-role",
       "name": "admin-role",
       "type": "IAMRole",
       "overprivileged": false,
@@ -152,7 +152,7 @@
       "sensitivity": "MEDIUM"
     },
     {
-      "id": "lambda:payment-lambda",
+      "id": "payment-lambda",
       "name": "payment-lambda",
       "type": "Lambda",
       "runtime": "python3.11",
@@ -163,7 +163,7 @@
       "sensitivity": "HIGH"
     },
     {
-      "id": "lambda:kyc-lambda",
+      "id": "kyc-lambda",
       "name": "kyc-lambda",
       "type": "Lambda",
       "runtime": "python3.11",
@@ -174,7 +174,7 @@
       "sensitivity": "MEDIUM"
     },
     {
-      "id": "lambda:notify-lambda",
+      "id": "notify-lambda",
       "name": "notify-lambda",
       "type": "Lambda",
       "runtime": "python3.11",
@@ -185,7 +185,7 @@
       "sensitivity": "MEDIUM"
     },
     {
-      "id": "apigw:0df61beycb",
+      "id": "fintech-api-gateway",
       "name": "fintech-api-gateway",
       "type": "APIGateway",
       "api_id": "0df61beycb",
@@ -195,7 +195,7 @@
       "sensitivity": "HIGH"
     },
     {
-      "id": "ssm:tx-queue",
+      "id": "tx-queue",
       "name": "tx-queue",
       "type": "SQS",
       "ssm_path": "/fintech/sqs/tx-queue",
@@ -207,7 +207,7 @@
       "msgs": "0"
     },
     {
-      "id": "ssm:notify-queue",
+      "id": "notify-queue",
       "name": "notify-queue",
       "type": "SQS",
       "ssm_path": "/fintech/sqs/notify-queue",
@@ -219,7 +219,7 @@
       "msgs": "0"
     },
     {
-      "id": "docker:mysql-db",
+      "id": "mysql-db",
       "name": "mysql-db",
       "type": "DockerService",
       "ssm_path": "/fintech/manual/mysql-db",
@@ -233,7 +233,7 @@
       "weak_password": true
     },
     {
-      "id": "ssm:redis-cache",
+      "id": "redis-cache",
       "name": "redis-cache",
       "type": "ElastiCache",
       "ssm_path": "/fintech/manual/redis-cache",
@@ -245,7 +245,7 @@
       "port": "6379"
     },
     {
-      "id": "ssm:waf-firewall",
+      "id": "waf-firewall",
       "name": "waf-firewall",
       "type": "WAF",
       "ssm_path": "/fintech/manual/waf-firewall",
@@ -257,7 +257,7 @@
       "port": "443"
     },
     {
-      "id": "ssm:load-balancer",
+      "id": "load-balancer",
       "name": "load-balancer",
       "type": "ALB",
       "ssm_path": "/fintech/infra/load-balancer",
@@ -268,7 +268,7 @@
       "status": "active"
     },
     {
-      "id": "ssm:cloudtrail-logs",
+      "id": "cloudtrail-logs",
       "name": "cloudtrail-logs",
       "type": "CloudTrail",
       "ssm_path": "/fintech/infra/cloudtrail-logs",
@@ -279,7 +279,7 @@
       "status": "enabled"
     },
     {
-      "id": "ssm:kms-keys",
+      "id": "kms-keys",
       "name": "kms-keys",
       "type": "KMS",
       "ssm_path": "/fintech/infra/kms-keys",

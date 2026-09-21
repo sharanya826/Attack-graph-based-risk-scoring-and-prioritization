@@ -11,6 +11,9 @@ services:
       - SECRET_KEY=supersecretkey123
       - AUTH_SERVICE_URL=http://auth-service:5000
       - PAYMENT_SERVICE_URL=http://payment-service:5000
+      - SERVICE_NAME=api-server
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       - auth-service
       - payment-service
@@ -28,6 +31,9 @@ services:
       - SECRET_KEY=weakauthkey456
       - ADMIN_PASSWORD=admin123
       - USER_PASSWORD=password
+      - SERVICE_NAME=auth-service
+    volumes:
+      - ./logs:/app/logs
     networks:
       - fintech-network
     restart: always
@@ -42,6 +48,9 @@ services:
       - DB_USER=root
       - DB_PASSWORD=weakpassword123
       - DB_NAME=fintech
+      - SERVICE_NAME=payment-service
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       - db
     networks:
