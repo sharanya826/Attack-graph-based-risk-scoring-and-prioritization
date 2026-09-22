@@ -1,9 +1,48 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 import requests
 import os
-
+import json
+from datetime import datetime, timezone
+from pathlib import Path
 
 app = Flask(__name__)
+
+SERVICE_NAME = os.environ.get("SERVICE_NAME", "api-server")
+LOG_FILE = Path("/app/logs/requests.jsonl")
+LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+DEST_MAP = {
+    "/api/login": "auth-service",
+    "/api/pay": "payment-service",
+    "/api/data": "mysql-db",
+    "/api/user-docs": "user-docs",
+    "/health": "api-server",
+}
+
+
+def write_log(endpoint, status):
+    dest = DEST_MAP.get(endpoint, "api-server")
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "source": SERVICE_NAME,
+        "destination": dest,
+        "status": status,
+        "endpoint": endpoint,
+    }
+    try:
+        with open(LOG_FILE, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
+
+
+@app.after_request
+def after_log(response):
+    try:
+        write_log(request.path, response.status_code)
+    except Exception:
+        pass
+    return response
 
 # Vulnerability: hardcoded secret key (weak)
 app.config['SECRET_KEY'] = 'supersecretkey123'
