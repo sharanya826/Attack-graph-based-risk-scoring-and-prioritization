@@ -1,6 +1,12 @@
 """Snapshot builder: logs -> temporal graph windows.
 Reads cloud_simulation/logs/requests.jsonl (shared volume), slices WINDOW_SEC,
 builds 25-node graph, 11-feature vectors, LOW/MEDIUM/HIGH label.
+
+Also reads cloud_simulation/logs/run_state.json (written by simulator.py) so
+each snapshot is tagged with run_id + scheduled_phase. scheduled_phase is
+ground-truth metadata for debugging/train-val-test splitting only -- it is
+NOT a model input feature.
+
 Run: python -m graph_model.snapshot_builder [--window-sec 300]
 Output: graph_model/snapshots/window_{N}.json
 """
@@ -15,6 +21,7 @@ import networkx as nx
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOG_FILE = BASE_DIR / "cloud_simulation" / "logs" / "requests.jsonl"
+STATE_FILE = BASE_DIR / "cloud_simulation" / "logs" / "run_state.json"
 SNAP_DIR = BASE_DIR / "graph_model" / "snapshots"
 ASSETS_FILE = BASE_DIR / "asset_discovery" / "assets.json"
 
@@ -67,6 +74,18 @@ def load_assets():
     return lookup
 
 
+def read_run_state():
+    """Best-effort read of the simulator's current run_id/phase. Returns
+    defaults if the simulator isn't running or hasn't written state yet."""
+    if not STATE_FILE.exists():
+        return {"run_id": "unknown", "window": None, "cycle_window": None, "phase": None}
+    try:
+        with open(STATE_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {"run_id": "unknown", "window": None, "cycle_window": None, "phase": None}
+
+
 def read_window(window_sec):
     if not LOG_FILE.exists():
         return []
@@ -84,7 +103,7 @@ def read_window(window_sec):
     return out
 
 
-def build_snapshot(events, window_id, asset_lookup):
+def build_snapshot(events, window_id, asset_lookup, run_meta):
     pair_counts = Counter((e["source"], e["destination"]) for e in events)
     failed_401 = Counter(e["destination"] for e in events if int(e.get("status", 200)) == 401)
     hits = Counter(e["destination"] for e in events)
@@ -134,6 +153,10 @@ def build_snapshot(events, window_id, asset_lookup):
     edges = [{"source": s, "target": t, "weight": d["weight"], "type": d["type"]} for s, t, d in G.edges(data=True)]
     return {"window": window_id, "timestamp": datetime.now(timezone.utc).isoformat(),
             "label": label, "event_count": total, "max_failed_login": max_fail,
+            "run_id": run_meta.get("run_id"),
+            "sim_window": run_meta.get("window"),
+            "cycle_window": run_meta.get("cycle_window"),
+            "scheduled_phase": run_meta.get("phase"),
             "nodes": NODE_ORDER, "feature_names": FEATURE_NAMES,
             "feature_matrix": matrix, "edges": edges}
 
@@ -150,10 +173,13 @@ def main():
     print(f"Snapshot builder: log={LOG_FILE}, window_sec={args.window_sec}, start={window_id}")
     while True:
         events = read_window(args.window_sec)
-        snap = build_snapshot(events, window_id, lookup)
+        run_meta = read_run_state()
+        snap = build_snapshot(events, window_id, lookup, run_meta)
         with open(SNAP_DIR / f"window_{window_id}.json", "w") as f:
             json.dump(snap, f, indent=2)
-        print(f"window_{window_id}.json: label={snap['label']} events={snap['event_count']} max401={snap['max_failed_login']} edges={len(snap['edges'])}")
+        print(f"window_{window_id}.json: run={snap['run_id']} scheduled={snap['scheduled_phase']} "
+              f"label={snap['label']} events={snap['event_count']} max401={snap['max_failed_login']} "
+              f"edges={len(snap['edges'])}")
         window_id += 1
         time.sleep(args.window_sec)
 

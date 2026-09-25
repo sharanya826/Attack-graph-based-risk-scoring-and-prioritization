@@ -13,7 +13,7 @@ asset_log = []
 def create_ec2_instances():
     ec2 = client("ec2")
     try:
-        existing = ec2.describe_instances()
+        existing = ec2.describe_instances()  
         for r in existing["Reservations"]:
             for i in r["Instances"]:
                 if i["State"]["Name"] not in ["terminated"]:
